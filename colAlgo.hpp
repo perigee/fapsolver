@@ -26,6 +26,7 @@ using namespace std;
 
 
 
+
 // ------------------------------------------- Pre-declaration of Constraint -----
 template <typename T> struct VariableBase;
 typedef VariableBase<AlgoRelated<dummyT> > Variable;
@@ -41,6 +42,102 @@ typedef boost::shared_ptr<AbsConstraint> CtrPtr;
 
 //================================================= Value class =================
 // ==============================================================================
+
+enum Level {Disable,Enable,Marked};
+
+struct Value
+{
+
+    Value(size_t v):_value(v),_level(Enable),_tabu(0){}
+    ~Value(){}
+
+
+
+
+    void clear()
+    {
+        if (_level < Enable) return;
+
+        _tabu = 0;
+        _gamma = 0;
+    }
+
+
+    void reset()
+    {
+        _level = Enable;
+        clear();
+    }
+
+    size_t _value;
+    Level _level;
+    size_t _tabu;
+    int _gamma;
+    char _polar;
+
+};
+
+typedef std::vector<boost::shared_ptr<Value> > Domain;
+typedef boost::shared_ptr<Value> ValPtr;
+typedef std::vector<boost::shared_ptr<Value> > Solution;
+
+
+
+struct Node{
+
+    Node():_level(Enable),_isSigned(false){}
+
+    ~Node(){_domain.clear();}
+
+
+    size_t domainSize()
+    {
+        return std::count_if(_domain.begin(),_domain.end(),
+                      [](ValPtr v){return v->_level > Disable;});
+    }
+
+    void assign(ValPtr v)
+    {
+        _current = v;
+        _isSigned = true;
+    }
+
+    void resign(){
+        _isSigned = false;
+    }
+
+    bool isSigned(){return _isSigned;}
+
+
+    void domainReset()
+    {
+        std::for_each(_domain.begin(),_domain.end(),
+                      [](ValPtr v){v->reset();});
+    }
+
+
+
+    void domainClear()
+    {
+        std::for_each(_domain.begin(),_domain.end(),
+                      [](ValPtr v){v->clear();});
+    }
+
+
+    void reset(){domainReset();resign();}
+
+    Level _level;
+    bool _isSigned;
+    ValPtr _current;
+    Domain _domain;
+};
+
+
+
+
+
+
+
 
 template <typename T>
         struct ValueBase : public T{
